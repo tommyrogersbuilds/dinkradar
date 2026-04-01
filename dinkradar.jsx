@@ -1,5 +1,38 @@
 import { useState, useEffect, useRef } from "react";
 
+// ============================================
+// KIT (CONVERTKIT) CONFIG — PASTE YOUR INFO HERE
+// ============================================
+const KIT_CONFIG = {
+  apiKey: "YOUR_API_KEY_HERE",       // Kit → Settings → Developer → API Key
+  formId: "YOUR_FORM_ID_HERE",      // The number from your form URL
+  tags: {
+    // Go to Kit → Subscribers → Tags → click each tag → grab the ID from the URL
+    "beginner": "TAG_ID_HERE",
+    "intermediate": "TAG_ID_HERE",
+    "advanced": "TAG_ID_HERE",
+    "power": "TAG_ID_HERE",
+    "control": "TAG_ID_HERE",
+    "all-around": "TAG_ID_HERE",
+    "budget-under-100": "TAG_ID_HERE",
+    "budget-100-200": "TAG_ID_HERE",
+    "budget-200-plus": "TAG_ID_HERE",
+  },
+};
+
+// Maps quiz answer values to Kit tag keys
+const ANSWER_TO_TAG = {
+  beginner: "beginner",
+  intermediate: "intermediate",
+  advanced: "advanced",
+  power: "power",
+  control: "control",
+  "all-around": "all-around",
+  budget: "budget-under-100",
+  mid: "budget-100-200",
+  premium: "budget-200-plus",
+};
+
 const BRAND = {
   yellow: "#D4FF00",
   blue: "#0B0B5C",
@@ -268,6 +301,114 @@ const QUESTIONS = [
   },
 ];
 
+// ============================================
+// BLOG POSTS — Add new posts here
+// ============================================
+const BLOG_POSTS = [
+  {
+    id: "best-pickleball-paddles-beginners-2026",
+    title: "Best Pickleball Paddles for Beginners in 2026",
+    category: "Gear Guide",
+    date: "2026-04-01",
+    readTime: "8 min read",
+    excerpt: "Just starting out? These paddles will help you learn faster without breaking the bank. We tested dozens to find the best options at every price point.",
+    heroEmoji: "🌱",
+    content: null, // Content will be added when posts are written
+  },
+  {
+    id: "best-pickleball-paddles-under-100",
+    title: "Best Pickleball Paddles Under $100",
+    category: "Budget Picks",
+    date: "2026-04-01",
+    readTime: "7 min read",
+    excerpt: "You don't need to spend $250 to get a great paddle. These budget picks compete with paddles twice their price.",
+    heroEmoji: "💵",
+    content: null,
+  },
+  {
+    id: "power-vs-control-paddles",
+    title: "Power vs Control Paddles: Which One Is Right for You?",
+    category: "Strategy",
+    date: "2026-04-01",
+    readTime: "6 min read",
+    excerpt: "The biggest decision in choosing a paddle. Here's how to figure out which style matches your game.",
+    heroEmoji: "⚖️",
+    content: null,
+  },
+  {
+    id: "best-paddles-for-doubles",
+    title: "Best Pickleball Paddles for Doubles in 2026",
+    category: "Gear Guide",
+    date: "2026-04-01",
+    readTime: "7 min read",
+    excerpt: "Doubles demands different things from your paddle. Here are the best options for dominating the kitchen with a partner.",
+    heroEmoji: "👥",
+    content: null,
+  },
+  {
+    id: "best-paddles-for-spin",
+    title: "Best Pickleball Paddles for Spin in 2026",
+    category: "Gear Guide",
+    date: "2026-04-01",
+    readTime: "6 min read",
+    excerpt: "Want to rip nasty topspin and slices? These paddles generate the most RPM on the market.",
+    heroEmoji: "🌀",
+    content: null,
+  },
+  {
+    id: "how-to-choose-pickleball-paddle",
+    title: "How to Choose a Pickleball Paddle: The Complete Guide",
+    category: "Education",
+    date: "2026-04-01",
+    readTime: "10 min read",
+    excerpt: "Core thickness, surface material, weight, shape — it all matters. Here's everything you need to know before buying.",
+    heroEmoji: "🎓",
+    content: null,
+  },
+  {
+    id: "best-paddles-for-tennis-players",
+    title: "Best Pickleball Paddles for Tennis Players Switching Over",
+    category: "Gear Guide",
+    date: "2026-04-01",
+    readTime: "6 min read",
+    excerpt: "Coming from tennis? Your instincts transfer but your paddle needs are different. Here's what works.",
+    heroEmoji: "🎾",
+    content: null,
+  },
+  {
+    id: "best-paddles-for-singles",
+    title: "Best Pickleball Paddles for Singles in 2026",
+    category: "Gear Guide",
+    date: "2026-04-01",
+    readTime: "6 min read",
+    excerpt: "Singles is a different animal. You need power, reach, and endurance. These paddles deliver.",
+    heroEmoji: "1️⃣",
+    content: null,
+  },
+  {
+    id: "pickleball-paddle-weight-guide",
+    title: "Pickleball Paddle Weight Guide: Light vs Medium vs Heavy",
+    category: "Education",
+    date: "2026-04-01",
+    readTime: "5 min read",
+    excerpt: "Paddle weight affects everything — power, control, fatigue, and injury risk. Here's how to find your sweet spot.",
+    heroEmoji: "🏋️",
+    content: null,
+  },
+  {
+    id: "best-paddles-for-control",
+    title: "Best Pickleball Paddles for Control in 2026",
+    category: "Gear Guide",
+    date: "2026-04-01",
+    readTime: "7 min read",
+    excerpt: "Win with placement, touch, and patience. These control paddles are built for the smart player.",
+    heroEmoji: "🎯",
+    content: null,
+  },
+];
+
+const CATEGORIES = [...new Set(BLOG_POSTS.map((p) => p.category))];
+
 function scorePaddle(paddle, answers) {
   let score = 0;
   if (paddle.tags.includes(answers.playstyle)) score += 30;
@@ -358,7 +499,17 @@ export default function DinkRadar() {
   const [profile, setProfile] = useState(null);
   const [animateIn, setAnimateIn] = useState(true);
   const [selectedOption, setSelectedOption] = useState(null);
+  const [selectedPost, setSelectedPost] = useState(null);
+  const [blogFilter, setBlogFilter] = useState("All");
+  const [isMobile, setIsMobile] = useState(false);
   const containerRef = useRef(null);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   useEffect(() => {
     const link = document.createElement("link");
@@ -394,10 +545,56 @@ export default function DinkRadar() {
     }, 400);
   };
 
-  const handleUnlock = () => {
-    if (email && firstName) {
-      setUnlocked(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+
+  const handleUnlock = async () => {
+    if (!email || !firstName) return;
+    setSubmitting(true);
+    setSubmitError("");
+
+    try {
+      // Build tag IDs array from quiz answers
+      const tagIds = [];
+      Object.values(answers).forEach((answer) => {
+        const tagKey = ANSWER_TO_TAG[answer];
+        if (tagKey && KIT_CONFIG.tags[tagKey] && KIT_CONFIG.tags[tagKey] !== "TAG_ID_HERE") {
+          tagIds.push(parseInt(KIT_CONFIG.tags[tagKey]));
+        }
+      });
+
+      const response = await fetch(
+        `https://api.convertkit.com/v3/forms/${KIT_CONFIG.formId}/subscribe`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            api_key: KIT_CONFIG.apiKey,
+            email: email,
+            first_name: firstName,
+            tags: tagIds,
+            fields: {
+              skill_level: answers.skill || "",
+              play_style: answers.playstyle || "",
+              format: answers.format || "",
+              weakness: answers.weakness || "",
+              spin_pref: answers.spin || "",
+              weight_pref: answers.weight || "",
+              budget: answers.budget || "",
+            },
+          }),
+        }
+      );
+
+      if (response.ok) {
+        setUnlocked(true);
+      } else {
+        setSubmitError("Something went wrong. Try again.");
+      }
+    } catch (err) {
+      setSubmitError("Connection error. Try again.");
     }
+    setSubmitting(false);
   };
 
   const resetQuiz = () => {
@@ -428,11 +625,7 @@ export default function DinkRadar() {
     transition: "opacity 0.4s ease, transform 0.4s ease",
   };
 
-  const blogPosts = [
-    { title: "5 Drills to Level Up Your Dink Game", tag: "Strategy" },
-    { title: "Power vs Control: Which Play Style Wins More?", tag: "Gear Guide" },
-    { title: "Best Paddles for Doubles in 2026", tag: "Reviews" },
-  ];
+  const blogPosts = BLOG_POSTS.slice(0, 3);
 
   return (
     <div ref={containerRef} style={containerStyle}>
@@ -454,38 +647,42 @@ export default function DinkRadar() {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "20px 32px",
+          padding: isMobile ? "16px 16px" : "20px 32px",
           position: "relative",
           zIndex: 10,
           borderBottom: `1px solid ${BRAND.grayDark}44`,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={resetQuiz}>
-          <img src="/DinkRadar_Logo-2.png" alt="DinkRadar" style={{ width: 36, height: 36, objectFit: "contain" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 6 : 10, cursor: "pointer" }} onClick={resetQuiz}>
+          <img src="/DinkRadar_Logo-2.png" alt="DinkRadar" style={{ width: isMobile ? 28 : 36, height: isMobile ? 28 : 36, objectFit: "contain" }} />
           <span
             style={{
               fontFamily: "'Chakra Petch', sans-serif",
               fontWeight: 700,
-              fontSize: 22,
+              fontSize: isMobile ? 16 : 22,
               color: BRAND.yellow,
-              letterSpacing: 2,
+              letterSpacing: isMobile ? 1 : 2,
               textTransform: "uppercase",
             }}
           >
             DinkRadar
           </span>
         </div>
-        <div style={{ display: "flex", gap: 28 }}>
+        <div style={{ display: "flex", gap: isMobile ? 16 : 28 }}>
           {["Quiz", "Blog", "Gear"].map((item) => (
             <span
               key={item}
-              onClick={item === "Quiz" ? () => transition(() => { setPage("quiz"); setQuizStep(0); setAnswers({}); setUnlocked(false); }) : undefined}
+              onClick={
+                item === "Quiz" ? () => transition(() => { setPage("quiz"); setQuizStep(0); setAnswers({}); setUnlocked(false); }) :
+                item === "Blog" ? () => transition(() => { setPage("blog"); setSelectedPost(null); }) :
+                undefined
+              }
               style={{
                 fontFamily: "'Chakra Petch', sans-serif",
-                fontSize: 13,
+                fontSize: isMobile ? 11 : 13,
                 color: BRAND.gray,
                 textTransform: "uppercase",
-                letterSpacing: 2,
+                letterSpacing: isMobile ? 1 : 2,
                 cursor: "pointer",
                 transition: "color 0.2s",
               }}
@@ -501,7 +698,7 @@ export default function DinkRadar() {
       <div style={{ position: "relative", zIndex: 5 }}>
         {/* ============ HOME ============ */}
         {page === "home" && (
-          <div style={{ ...fadeStyle, textAlign: "center", padding: "80px 24px 60px" }}>
+          <div style={{ ...fadeStyle, textAlign: "center", padding: isMobile ? "40px 16px 40px" : "80px 24px 60px" }}>
             {/* Radar rings background */}
             <div style={{ position: "absolute", top: "10%", left: "50%", transform: "translateX(-50%)", opacity: 0.06, pointerEvents: "none" }}>
               <svg width="600" height="600" viewBox="0 0 600 600">
@@ -631,7 +828,7 @@ export default function DinkRadar() {
 
         {/* ============ QUIZ ============ */}
         {page === "quiz" && (
-          <div style={{ ...fadeStyle, maxWidth: 560, margin: "0 auto", padding: "40px 24px 60px" }}>
+          <div style={{ ...fadeStyle, maxWidth: 560, margin: "0 auto", padding: isMobile ? "24px 16px 40px" : "40px 24px 60px" }}>
             <ProgressBar current={quizStep} total={QUESTIONS.length} />
 
             <div style={{ marginTop: 12, textAlign: "center", fontSize: 13, color: BRAND.gray, fontFamily: "'Chakra Petch', sans-serif", letterSpacing: 1 }}>
@@ -722,7 +919,7 @@ export default function DinkRadar() {
 
         {/* ============ RESULTS ============ */}
         {page === "results" && (
-          <div style={{ ...fadeStyle, maxWidth: 680, margin: "0 auto", padding: "40px 24px 80px" }}>
+          <div style={{ ...fadeStyle, maxWidth: 680, margin: "0 auto", padding: isMobile ? "24px 16px 60px" : "40px 24px 80px" }}>
             {/* Profile */}
             {profile && (
               <div
@@ -894,25 +1091,32 @@ export default function DinkRadar() {
 
                       <button
                         onClick={handleUnlock}
-                        disabled={!email || !firstName}
+                        disabled={!email || !firstName || submitting}
                         style={{
                           width: "100%",
                           fontFamily: "'Chakra Petch', sans-serif",
                           fontSize: 14,
                           fontWeight: 700,
                           padding: "16px",
-                          background: email && firstName ? BRAND.yellow : BRAND.grayDark,
-                          color: email && firstName ? BRAND.blue : BRAND.gray,
+                          background: email && firstName && !submitting ? BRAND.yellow : BRAND.grayDark,
+                          color: email && firstName && !submitting ? BRAND.blue : BRAND.gray,
                           border: "none",
                           borderRadius: 8,
-                          cursor: email && firstName ? "pointer" : "not-allowed",
+                          cursor: email && firstName && !submitting ? "pointer" : "not-allowed",
                           textTransform: "uppercase",
                           letterSpacing: 3,
                           transition: "all 0.2s",
+                          opacity: submitting ? 0.7 : 1,
                         }}
                       >
-                        Unlock My Results
+                        {submitting ? "Unlocking..." : "Unlock My Results"}
                       </button>
+
+                      {submitError && (
+                        <p style={{ fontSize: 12, color: "#FF6B6B", marginTop: 8, textAlign: "center" }}>
+                          {submitError}
+                        </p>
+                      )}
 
                       <p style={{ fontSize: 11, color: BRAND.gray, marginTop: 10, opacity: 0.5 }}>
                         No spam. Unsubscribe anytime.
@@ -950,6 +1154,7 @@ export default function DinkRadar() {
                 {blogPosts.map((post, i) => (
                   <div
                     key={i}
+                    onClick={() => transition(() => { setPage("blog"); setSelectedPost(post.content ? post : null); })}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -976,7 +1181,7 @@ export default function DinkRadar() {
                           display: "block",
                         }}
                       >
-                        {post.tag}
+                        {post.category}
                       </span>
                       <span style={{ fontSize: 15, color: BRAND.white, fontWeight: 500 }}>{post.title}</span>
                     </div>
@@ -1015,6 +1220,179 @@ export default function DinkRadar() {
               >
                 Retake Quiz
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* ============ BLOG LISTING ============ */}
+        {page === "blog" && !selectedPost && (
+          <div style={{ ...fadeStyle, maxWidth: 760, margin: "0 auto", padding: isMobile ? "24px 16px 60px" : "40px 24px 80px" }}>
+            <div style={{ textAlign: "center", marginBottom: 40 }}>
+              <div
+                style={{
+                  display: "inline-block",
+                  padding: "4px 16px",
+                  background: `${BRAND.yellow}18`,
+                  border: `1px solid ${BRAND.yellow}44`,
+                  borderRadius: 100,
+                  fontSize: 11,
+                  color: BRAND.yellow,
+                  fontFamily: "'Chakra Petch', sans-serif",
+                  letterSpacing: 2,
+                  textTransform: "uppercase",
+                  marginBottom: 16,
+                }}
+              >
+                The Blog
+              </div>
+              <h1 style={{ fontFamily: "'Chakra Petch', sans-serif", fontSize: isMobile ? 28 : 36, fontWeight: 700, color: BRAND.white, marginBottom: 12 }}>
+                Gear Up. <span style={{ color: BRAND.yellow }}>Play Smarter.</span>
+              </h1>
+              <p style={{ fontSize: 15, color: BRAND.gray, fontWeight: 300, maxWidth: 500, margin: "0 auto" }}>
+                Paddle reviews, strategy breakdowns, and everything you need to level up your pickleball game.
+              </p>
+            </div>
+
+            {/* Category filter */}
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 32, justifyContent: "center" }}>
+              {["All", ...CATEGORIES].map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setBlogFilter(cat)}
+                  style={{
+                    fontFamily: "'Chakra Petch', sans-serif",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    padding: "8px 16px",
+                    background: blogFilter === cat ? BRAND.yellow : `${BRAND.grayDark}55`,
+                    color: blogFilter === cat ? BRAND.blue : BRAND.gray,
+                    border: `1px solid ${blogFilter === cat ? BRAND.yellow : BRAND.grayDark}`,
+                    borderRadius: 100,
+                    cursor: "pointer",
+                    textTransform: "uppercase",
+                    letterSpacing: 1,
+                    transition: "all 0.2s",
+                  }}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            {/* Blog post cards */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {BLOG_POSTS.filter((post) => blogFilter === "All" || post.category === blogFilter).map((post) => (
+                <div
+                  key={post.id}
+                  onClick={() => { if (post.content) transition(() => setSelectedPost(post)); }}
+                  style={{
+                    display: "flex",
+                    gap: isMobile ? 16 : 20,
+                    padding: isMobile ? "20px 16px" : "24px 24px",
+                    background: `${BRAND.grayDark}44`,
+                    border: `1px solid ${BRAND.grayDark}66`,
+                    borderRadius: 12,
+                    cursor: post.content ? "pointer" : "default",
+                    transition: "border-color 0.2s, transform 0.2s",
+                    opacity: post.content ? 1 : 0.6,
+                  }}
+                  onMouseEnter={(e) => { if (post.content) { e.currentTarget.style.borderColor = BRAND.yellow + "44"; e.currentTarget.style.transform = "translateY(-2px)"; } }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = BRAND.grayDark + "66"; e.currentTarget.style.transform = "translateY(0)"; }}
+                >
+                  <div style={{ fontSize: 32, flexShrink: 0, lineHeight: 1 }}>{post.heroEmoji}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 10, fontFamily: "'Chakra Petch', sans-serif", textTransform: "uppercase", letterSpacing: 2, color: BRAND.yellow }}>{post.category}</span>
+                      <span style={{ fontSize: 10, color: BRAND.gray }}>·</span>
+                      <span style={{ fontSize: 10, color: BRAND.gray }}>{post.readTime}</span>
+                      {!post.content && (
+                        <>
+                          <span style={{ fontSize: 10, color: BRAND.gray }}>·</span>
+                          <span style={{ fontSize: 10, color: BRAND.yellow, fontFamily: "'Chakra Petch', sans-serif", letterSpacing: 1, textTransform: "uppercase" }}>Coming Soon</span>
+                        </>
+                      )}
+                    </div>
+                    <h3 style={{ fontFamily: "'Chakra Petch', sans-serif", fontSize: isMobile ? 15 : 17, fontWeight: 700, color: BRAND.white, margin: "0 0 8px 0", lineHeight: 1.3 }}>{post.title}</h3>
+                    <p style={{ fontSize: 13, color: BRAND.gray, margin: 0, lineHeight: 1.6, fontWeight: 300 }}>{post.excerpt}</p>
+                  </div>
+                  {post.content && <span style={{ color: BRAND.gray, fontSize: 18, alignSelf: "center", flexShrink: 0 }}>→</span>}
+                </div>
+              ))}
+            </div>
+
+            {/* Quiz CTA */}
+            <div style={{ marginTop: 48, padding: isMobile ? "28px 20px" : "36px 32px", background: `linear-gradient(135deg, ${BRAND.grayDark}66, ${BRAND.blueLight}33)`, borderRadius: 16, border: `1px solid ${BRAND.yellow}22`, textAlign: "center" }}>
+              <h3 style={{ fontFamily: "'Chakra Petch', sans-serif", fontSize: isMobile ? 18 : 22, fontWeight: 700, color: BRAND.white, marginBottom: 8 }}>Not Sure Which Paddle Is Right?</h3>
+              <p style={{ fontSize: 14, color: BRAND.gray, marginBottom: 20, fontWeight: 300 }}>Take the 60-second quiz and get matched with your perfect paddle.</p>
+              <button
+                onClick={() => transition(() => { setPage("quiz"); setQuizStep(0); setAnswers({}); setUnlocked(false); })}
+                style={{ fontFamily: "'Chakra Petch', sans-serif", fontSize: 14, fontWeight: 700, padding: "14px 36px", background: BRAND.yellow, color: BRAND.blue, border: "none", borderRadius: 6, cursor: "pointer", textTransform: "uppercase", letterSpacing: 3 }}
+              >
+                Take the Quiz
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ============ BLOG POST ============ */}
+        {page === "blog" && selectedPost && (
+          <div style={{ ...fadeStyle, maxWidth: 680, margin: "0 auto", padding: isMobile ? "24px 16px 60px" : "40px 24px 80px" }}>
+            <button
+              onClick={() => transition(() => setSelectedPost(null))}
+              style={{ background: "none", border: "none", color: BRAND.gray, fontSize: 13, cursor: "pointer", fontFamily: "'Chakra Petch', sans-serif", letterSpacing: 1, textTransform: "uppercase", marginBottom: 24, padding: 0 }}
+            >
+              ← Back to Blog
+            </button>
+
+            <div style={{ marginBottom: 32 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 10, fontFamily: "'Chakra Petch', sans-serif", textTransform: "uppercase", letterSpacing: 2, color: BRAND.yellow, padding: "4px 10px", background: `${BRAND.yellow}15`, borderRadius: 4 }}>{selectedPost.category}</span>
+                <span style={{ fontSize: 12, color: BRAND.gray }}>{selectedPost.readTime}</span>
+              </div>
+              <h1 style={{ fontFamily: "'Chakra Petch', sans-serif", fontSize: isMobile ? 24 : 32, fontWeight: 700, color: BRAND.white, lineHeight: 1.2, marginBottom: 16 }}>{selectedPost.title}</h1>
+              <p style={{ fontSize: 16, color: BRAND.gray, lineHeight: 1.7, fontWeight: 300 }}>{selectedPost.excerpt}</p>
+              <div style={{ height: 1, background: `${BRAND.grayDark}88`, marginTop: 24 }} />
+            </div>
+
+            {selectedPost.content ? (
+              <div style={{ fontSize: 15, color: BRAND.gray, lineHeight: 1.8, fontWeight: 300 }} dangerouslySetInnerHTML={{ __html: selectedPost.content }} />
+            ) : (
+              <div style={{ textAlign: "center", padding: "60px 0" }}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>🚧</div>
+                <p style={{ fontSize: 16, color: BRAND.gray, fontWeight: 300 }}>This article is coming soon.</p>
+              </div>
+            )}
+
+            <div style={{ marginTop: 48, padding: isMobile ? "28px 20px" : "36px 32px", background: `linear-gradient(135deg, ${BRAND.grayDark}66, ${BRAND.blueLight}33)`, borderRadius: 16, border: `1px solid ${BRAND.yellow}22`, textAlign: "center" }}>
+              <h3 style={{ fontFamily: "'Chakra Petch', sans-serif", fontSize: isMobile ? 18 : 22, fontWeight: 700, color: BRAND.white, marginBottom: 8 }}>Find Your Perfect Paddle</h3>
+              <p style={{ fontSize: 14, color: BRAND.gray, marginBottom: 20, fontWeight: 300 }}>Answer 7 quick questions and get matched with the paddle that fits your game.</p>
+              <button
+                onClick={() => transition(() => { setPage("quiz"); setQuizStep(0); setAnswers({}); setUnlocked(false); })}
+                style={{ fontFamily: "'Chakra Petch', sans-serif", fontSize: 14, fontWeight: 700, padding: "14px 36px", background: BRAND.yellow, color: BRAND.blue, border: "none", borderRadius: 6, cursor: "pointer", textTransform: "uppercase", letterSpacing: 3 }}
+              >
+                Take the Quiz
+              </button>
+            </div>
+
+            <div style={{ marginTop: 48 }}>
+              <h3 style={{ fontFamily: "'Chakra Petch', sans-serif", fontSize: 16, fontWeight: 700, color: BRAND.white, marginBottom: 16, textTransform: "uppercase", letterSpacing: 2 }}>Related Articles</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {BLOG_POSTS.filter((p) => p.id !== selectedPost.id && p.category === selectedPost.category).slice(0, 3).map((post) => (
+                  <div
+                    key={post.id}
+                    onClick={() => { if (post.content) transition(() => setSelectedPost(post)); }}
+                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: `${BRAND.grayDark}44`, border: `1px solid ${BRAND.grayDark}66`, borderRadius: 8, cursor: post.content ? "pointer" : "default", opacity: post.content ? 1 : 0.6, transition: "border-color 0.2s" }}
+                    onMouseEnter={(e) => { if (post.content) e.currentTarget.style.borderColor = BRAND.yellow + "44"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = BRAND.grayDark + "66"; }}
+                  >
+                    <div>
+                      <span style={{ fontSize: 10, color: BRAND.yellow, fontFamily: "'Chakra Petch', sans-serif", textTransform: "uppercase", letterSpacing: 1 }}>{post.category}</span>
+                      <div style={{ fontSize: 14, color: BRAND.white, fontWeight: 500, marginTop: 2 }}>{post.title}</div>
+                    </div>
+                    {post.content && <span style={{ color: BRAND.gray, fontSize: 16 }}>→</span>}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
