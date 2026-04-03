@@ -689,8 +689,43 @@ export default function DinkRadar() {
   const [selectedOption, setSelectedOption] = useState(null);
   const [selectedPost, setSelectedPost] = useState(null);
   const [blogFilter, setBlogFilter] = useState("All");
+  const [previousPage, setPreviousPage] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
   const containerRef = useRef(null);
+
+  // Restore cached results on mount
+  useEffect(() => {
+    try {
+      const cached = sessionStorage.getItem("dinkradar_results");
+      if (cached) {
+        const data = JSON.parse(cached);
+        setPage(data.page || "home");
+        setAnswers(data.answers || {});
+        setRecommendations(data.recommendations || []);
+        setProfile(data.profile || null);
+        setUnlocked(data.unlocked || false);
+        setEmail(data.email || "");
+        setFirstName(data.firstName || "");
+      }
+    } catch (e) {}
+  }, []);
+
+  // Save state whenever results change
+  useEffect(() => {
+    if (recommendations.length > 0) {
+      try {
+        sessionStorage.setItem("dinkradar_results", JSON.stringify({
+          page,
+          answers,
+          recommendations,
+          profile,
+          unlocked,
+          email,
+          firstName,
+        }));
+      } catch (e) {}
+    }
+  }, [page, answers, recommendations, profile, unlocked, email, firstName]);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 640);
@@ -786,6 +821,7 @@ export default function DinkRadar() {
   };
 
   const resetQuiz = () => {
+    try { sessionStorage.removeItem("dinkradar_results"); } catch (e) {}
     transition(() => {
       setPage("home");
       setQuizStep(0);
@@ -1194,7 +1230,7 @@ export default function DinkRadar() {
               </div>
 
               {!unlocked ? (
-                <div style={{ position: "relative", maxHeight: 420, overflow: "hidden", borderRadius: 16 }}>
+                <div style={{ position: "relative", maxHeight: isMobile ? 340 : 420, overflow: "hidden", borderRadius: 16 }}>
                   {/* Blurred cards */}
                   <div style={{ filter: "blur(8px)", opacity: 0.5, pointerEvents: "none", userSelect: "none" }}>
                     {recommendations.slice(0, 2).map((p, i) => (
@@ -1343,7 +1379,7 @@ export default function DinkRadar() {
                 {blogPosts.map((post, i) => (
                   <div
                     key={i}
-                    onClick={() => transition(() => { setPage("blog"); setSelectedPost(post.content ? post : null); })}
+                    onClick={() => transition(() => { setPreviousPage("results"); setPage("blog"); setSelectedPost(post.content ? post : null); })}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -1527,10 +1563,18 @@ export default function DinkRadar() {
         {page === "blog" && selectedPost && (
           <div style={{ ...fadeStyle, maxWidth: 680, margin: "0 auto", padding: isMobile ? "24px 16px 60px" : "40px 24px 80px" }}>
             <button
-              onClick={() => transition(() => setSelectedPost(null))}
+              onClick={() => transition(() => {
+                if (previousPage === "results") {
+                  setPage("results");
+                  setSelectedPost(null);
+                  setPreviousPage(null);
+                } else {
+                  setSelectedPost(null);
+                }
+              })}
               style={{ background: "none", border: "none", color: BRAND.gray, fontSize: 13, cursor: "pointer", fontFamily: "'Chakra Petch', sans-serif", letterSpacing: 1, textTransform: "uppercase", marginBottom: 24, padding: 0 }}
             >
-              ← Back to Blog
+              {previousPage === "results" ? "← Back to Results" : "← Back to Blog"}
             </button>
 
             <div style={{ marginBottom: 32 }}>
